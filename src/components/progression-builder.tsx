@@ -5,7 +5,15 @@ import {
   NOTE_NAMES, CHORD_TYPES, DIATONIC_MAJOR, DIATONIC_MAJOR_7TH,
   SCALE_TYPES, PRESET_PROGRESSIONS, getDiatonicChordName,
 } from "@/lib/music-theory";
-import { playArrangement, playChord, setReverbWet, stopAll } from "@/lib/audio-engine";
+import {
+  InstrumentPreset,
+  INSTRUMENT_LABELS,
+  playArrangement,
+  playChord,
+  setInstrument,
+  setReverbWet,
+  stopAll,
+} from "@/lib/audio-engine";
 import {
   SavedProgression,
   deleteProgression,
@@ -14,6 +22,9 @@ import {
 } from "@/lib/storage";
 import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
 import { generateRandomProgression } from "@/lib/progression-generator";
+import { GENRE_PRESETS, GENRE_NAMES, GenrePreset } from "@/lib/genre-presets";
+import { suggestNextChords } from "@/lib/chord-suggester";
+import { downloadWav, renderArrangementToWav } from "@/lib/wav-export";
 import { copyToClipboard, decodeBuilderState, encodeBuilderState } from "@/lib/share-url";
 import { loadBuilderPrefs, saveBuilderPrefs } from "@/lib/user-prefs";
 import { unlockAchievement } from "@/lib/achievements";
@@ -58,12 +69,19 @@ export function ProgressionBuilder() {
   const [reverbPct, setReverbPct] = useState(20);
   const [loop, setLoop] = useState(false);
   const [beatsPerChord, setBeatsPerChord] = useState(2);
+  const [selectedGenre, setSelectedGenre] = useState<string>(GENRE_NAMES[0]);
+  const [instrument, setInstrumentState] = useState<InstrumentPreset>("piano");
+  const [exporting, setExporting] = useState(false);
   const loopRef = useRef(false);
   const handlePlayRef = useRef<() => Promise<void> | void>(() => {});
 
   useEffect(() => {
     setReverbWet(reverbPct / 100);
   }, [reverbPct]);
+
+  useEffect(() => {
+    setInstrument(instrument);
+  }, [instrument]);
 
   useEffect(() => {
     loopRef.current = loop;
@@ -101,6 +119,7 @@ export function ProgressionBuilder() {
     setRhythm(prefs.rhythm);
     setReverbPct(prefs.reverbPct);
     setBeatsPerChord(prefs.beatsPerChord);
+    setInstrumentState(prefs.instrument);
 
     // 2. Hash-based state restore (overrides prefs)
     if (typeof window !== "undefined" && window.location.hash) {
@@ -123,10 +142,10 @@ export function ProgressionBuilder() {
   // Persist settings (debounced via rAF)
   useEffect(() => {
     const id = requestAnimationFrame(() => {
-      saveBuilderPrefs({ key, useSeventh, tempo, rhythm, reverbPct, beatsPerChord });
+      saveBuilderPrefs({ key, useSeventh, tempo, rhythm, reverbPct, beatsPerChord, instrument });
     });
     return () => cancelAnimationFrame(id);
-  }, [key, useSeventh, tempo, rhythm, reverbPct, beatsPerChord]);
+  }, [key, useSeventh, tempo, rhythm, reverbPct, beatsPerChord, instrument]);
 
   const handleShare = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -230,6 +249,22 @@ export function ProgressionBuilder() {
     loadPreset(degrees);
   };
 
+  const handleLoadGenrePreset = useCallback(
+    (preset: GenrePreset) => {
+      setUseSeventh(preset.useSeventh);
+      setTempo(preset.tempo);
+      setRhythm(preset.rhythm);
+      setBeatsPerChord(preset.beatsPerChord);
+      setProgression(
+        preset.degrees.map((d) => ({
+          degreeIndex: d,
+          name: getDiatonicChordName(key, d, preset.useSeventh),
+        })),
+      );
+    },
+    [key],
+  );
+
   const handlePlay = async () => {
     if (isPlaying) {
       loopRef.current = false;
@@ -283,6 +318,22 @@ export function ProgressionBuilder() {
     const notes = chordType.intervals.map((i) => rootMidi + i);
     return applyInversion(notes, c.inversion ?? 0);
   });
+
+  const handleExportWav = async () => {
+    if (exporting || progression.length === 0) return;
+    try {
+      setExporting(true);
+      const blob = await renderArrangementToWav({
+        chordsMidi,
+        tempo,
+        pattern: rhythm,
+        beatsPerChord,
+      });
+      downloadWav(blob, `music-theory-lab-${Date.now()}.wav`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const cycleInversion = (index: number) => {
     setProgression((prev) => {
@@ -373,6 +424,26 @@ export function ProgressionBuilder() {
                 {(Object.keys(RHYTHM_LABELS) as RhythmPattern[]).map((p) => (
                   <option key={p} value={p}>
                     {RHYTHM_LABELS[p]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>音色</label>
+              <select
+                value={instrument}
+                onChange={(e) => setInstrumentState(e.target.value as InstrumentPreset)}
+                className="px-2 py-1.5 rounded-lg text-sm"
+                style={{
+                  background: "var(--color-bg)",
+                  color: "var(--color-text)",
+                  border: "1px solid var(--color-border)",
+                }}
+              >
+                {(Object.keys(INSTRUMENT_LABELS) as InstrumentPreset[]).map((p) => (
+                  <option key={p} value={p}>
+                    {INSTRUMENT_LABELS[p]}
                   </option>
                 ))}
               </select>
@@ -524,6 +595,15 @@ export function ProgressionBuilder() {
               🔗 URLコピー
             </button>
             <button
+              onClick={handleExportWav}
+              disabled={progression.length === 0 || exporting}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "var(--color-bg)", color: "var(--color-accent-rose)", border: "1px solid var(--color-accent-rose)" }}
+              title="進行 + 伴奏をWAVとして書き出し"
+            >
+              {exporting ? "書き出し中…" : "🎵 WAV"}
+            </button>
+            <button
               onClick={() => setLoop((v) => !v)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer"
               style={{
@@ -646,6 +726,78 @@ export function ProgressionBuilder() {
           </div>
           </>
         )}
+      </div>
+
+      {/* Next Chord Suggestions */}
+      <div
+        className="rounded-2xl p-6 space-y-3"
+        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-subtle)" }}
+      >
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-bold m-0" style={{ fontFamily: "var(--font-display)" }}>
+            🎯 次のコード候補
+          </h3>
+          <span className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+            機能的な自然さでレコメンド
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {suggestNextChords(progression.map((c) => c.degreeIndex), 3).map((s, i) => {
+            const d = diatonic[s.degreeIndex];
+            const funcColor = functionColors[d.function];
+            const chordName = getDiatonicChordName(key, s.degreeIndex, useSeventh);
+            return (
+              <button
+                key={`${s.degreeIndex}-${i}`}
+                onClick={() => addChord(s.degreeIndex)}
+                className="group flex flex-col items-start gap-1 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200 border-0"
+                style={{
+                  background: "var(--color-bg)",
+                  border: `1px solid ${funcColor}44`,
+                  minWidth: 180,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = funcColor;
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = `${funcColor}44`;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold" style={{ color: funcColor }}>
+                    {d.degree}
+                  </span>
+                  <span className="text-base font-bold" style={{ color: "var(--color-text)" }}>
+                    {chordName}
+                  </span>
+                  <span
+                    className="text-[10px] px-1.5 py-0.5 rounded-full"
+                    style={{ background: `${funcColor}22`, color: funcColor }}
+                  >
+                    {d.function}
+                  </span>
+                </div>
+                <span className="text-xs" style={{ color: "var(--color-text-secondary)" }}>
+                  {s.reason}
+                </span>
+                <div
+                  className="h-1 w-full rounded-full overflow-hidden"
+                  style={{ background: "var(--color-bg-elevated)" }}
+                >
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.round(s.score * 100)}%`,
+                      background: funcColor,
+                    }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Save Input */}
@@ -777,6 +929,77 @@ export function ProgressionBuilder() {
           </div>
         </div>
       )}
+
+      {/* Genre Presets */}
+      <div
+        className="rounded-2xl p-6 space-y-4"
+        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-subtle)" }}
+      >
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="text-lg font-bold m-0" style={{ fontFamily: "var(--font-display)" }}>
+            🎸 ジャンル別プリセット
+          </h3>
+          <div className="flex gap-1 flex-wrap">
+            {GENRE_NAMES.map((genre) => (
+              <button
+                key={genre}
+                onClick={() => setSelectedGenre(genre)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 border-0 cursor-pointer"
+                style={{
+                  background: selectedGenre === genre ? "var(--color-primary)" : "var(--color-bg)",
+                  color: selectedGenre === genre ? "oklch(0.15 0.02 75)" : "var(--color-text-secondary)",
+                  border: `1px solid ${selectedGenre === genre ? "var(--color-primary)" : "var(--color-border)"}`,
+                }}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {(GENRE_PRESETS[selectedGenre] ?? []).map((preset) => (
+            <button
+              key={preset.name}
+              onClick={() => handleLoadGenrePreset(preset)}
+              className="flex flex-col items-start gap-1.5 p-4 rounded-xl text-left cursor-pointer transition-all duration-200 border-0"
+              style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-accent-blue)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 4px 16px oklch(0 0 0 / 0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-border)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <span className="text-sm font-bold" style={{ color: "var(--color-text)" }}>
+                {preset.name}
+              </span>
+              <span className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
+                {preset.degrees.map((d) => diatonic[d].degree).join(" → ")}
+              </span>
+              <div className="flex items-center gap-2 text-[10px]" style={{ color: "var(--color-text-tertiary)" }}>
+                <span>{preset.tempo} BPM</span>
+                <span>·</span>
+                <span>{preset.beatsPerChord}拍/コード</span>
+                <span>·</span>
+                <span>{RHYTHM_LABELS[preset.rhythm]}</span>
+                {preset.useSeventh && (
+                  <>
+                    <span>·</span>
+                    <span style={{ color: "var(--color-secondary)" }}>7th</span>
+                  </>
+                )}
+              </div>
+              <span className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+                {preset.description}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Presets */}
       <div

@@ -19,6 +19,7 @@ import {
 } from "@/lib/audio-engine";
 import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
 import { downloadMidi, exportArrangementToMidi } from "@/lib/midi-export";
+import { downloadWav, renderArrangementToWav } from "@/lib/wav-export";
 import { unlockAchievement } from "@/lib/achievements";
 import { PianoKeyboard } from "./piano-keyboard";
 import { PianoRoll } from "./piano-roll";
@@ -33,6 +34,7 @@ export function MelodyClient() {
   const [status, setStatus] = useState<TransportStatus>("idle");
   const [playingChordIdx, setPlayingChordIdx] = useState(-1);
   const [rhythm, setRhythm] = useState<RhythmPattern>("eight-beat");
+  const [exportingWav, setExportingWav] = useState(false);
   const recordingStartRef = useRef<number>(0);
   const lastNoteTimeRef = useRef<number>(0);
 
@@ -88,6 +90,24 @@ export function MelodyClient() {
     downloadMidi(blob, filename);
     unlockAchievement("first-midi");
   }, [chordsMidi, melody, tempo, preset.name, key]);
+
+  const handleExportWav = useCallback(async () => {
+    if (exportingWav) return;
+    if (melody.length === 0 && chordsMidi.length === 0) return;
+    try {
+      setExportingWav(true);
+      const blob = await renderArrangementToWav({
+        chordsMidi,
+        tempo,
+        pattern: rhythm,
+        melody,
+      });
+      const baseName = preset.name.toLowerCase().replace(/\s+/g, "-");
+      downloadWav(blob, `${baseName}-${key}-${tempo}bpm`);
+    } finally {
+      setExportingWav(false);
+    }
+  }, [exportingWav, chordsMidi, melody, tempo, rhythm, preset.name, key]);
 
   const handleNoteClick = useCallback(
     (midi: number) => {
@@ -385,6 +405,20 @@ export function MelodyClient() {
           title="進行+メロディをMIDIファイルでダウンロード"
         >
           💾 MIDI書き出し
+        </button>
+
+        <button
+          onClick={handleExportWav}
+          disabled={exportingWav || status !== "idle" || (melody.length === 0 && chordsMidi.length === 0)}
+          className="px-5 py-3 rounded-xl text-sm font-semibold cursor-pointer border-0 disabled:opacity-50"
+          style={{
+            background: "transparent",
+            color: "var(--color-accent-rose)",
+            border: "1px solid var(--color-accent-rose)",
+          }}
+          title="進行+メロディをWAVファイルでダウンロード"
+        >
+          {exportingWav ? "書き出し中…" : "🎵 WAV書き出し"}
         </button>
       </div>
 

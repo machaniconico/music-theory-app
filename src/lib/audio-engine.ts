@@ -3,7 +3,57 @@
 import * as Tone from "tone";
 import { DRUM_PATTERNS, RhythmPattern } from "./rhythm";
 
+export type InstrumentPreset =
+  | "piano"
+  | "electric-piano"
+  | "organ"
+  | "strings"
+  | "guitar";
+
+export const INSTRUMENT_LABELS: Record<InstrumentPreset, string> = {
+  piano: "🎹 ピアノ",
+  "electric-piano": "🎼 エレピ",
+  organ: "🎛 オルガン",
+  strings: "🎻 ストリングス",
+  guitar: "🎸 ギター",
+};
+
+interface InstrumentConfig {
+  oscillator: string;
+  envelope: { attack: number; decay: number; sustain: number; release: number };
+  volume: number;
+}
+
+const INSTRUMENT_CONFIGS: Record<InstrumentPreset, InstrumentConfig> = {
+  piano: {
+    oscillator: "triangle8",
+    envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 1.2 },
+    volume: -8,
+  },
+  "electric-piano": {
+    oscillator: "fmsine",
+    envelope: { attack: 0.005, decay: 0.4, sustain: 0.3, release: 1.0 },
+    volume: -9,
+  },
+  organ: {
+    oscillator: "fatsawtooth",
+    envelope: { attack: 0.01, decay: 0.0, sustain: 1.0, release: 0.25 },
+    volume: -14,
+  },
+  strings: {
+    oscillator: "fatsine",
+    envelope: { attack: 0.3, decay: 0.5, sustain: 0.9, release: 1.6 },
+    volume: -10,
+  },
+  guitar: {
+    oscillator: "triangle",
+    envelope: { attack: 0.003, decay: 0.5, sustain: 0.12, release: 0.8 },
+    volume: -7,
+  },
+};
+
 let synth: Tone.PolySynth | null = null;
+let currentInstrument: InstrumentPreset = "piano";
 let kick: Tone.MembraneSynth | null = null;
 let snare: Tone.NoiseSynth | null = null;
 let hat: Tone.MetalSynth | null = null;
@@ -34,22 +84,38 @@ async function ensureContext() {
   }
 }
 
+function buildSynth(preset: InstrumentPreset): Tone.PolySynth {
+  const config = INSTRUMENT_CONFIGS[preset];
+  const s = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: config.oscillator as never },
+    envelope: config.envelope,
+    volume: config.volume,
+  });
+  s.connect(getReverbBus());
+  return s;
+}
+
 function getSynth(): Tone.PolySynth {
   if (!synth) {
-    synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "triangle8" as const },
-      envelope: {
-        attack: 0.02,
-        decay: 0.3,
-        sustain: 0.4,
-        release: 1.2,
-      },
-      volume: -8,
-    });
-    synth.connect(getReverbBus());
+    synth = buildSynth(currentInstrument);
     isInitialized = true;
   }
   return synth;
+}
+
+export function setInstrument(preset: InstrumentPreset): void {
+  if (currentInstrument === preset && synth) return;
+  currentInstrument = preset;
+  if (synth) {
+    synth.releaseAll();
+    synth.dispose();
+    synth = null;
+  }
+  getSynth();
+}
+
+export function getInstrument(): InstrumentPreset {
+  return currentInstrument;
 }
 
 function getDrumKit() {

@@ -4,16 +4,27 @@ import { useEffect, useState } from "react";
 import { PianoKeyboard } from "@/components/piano-keyboard";
 import { ChordDisplay } from "@/components/chord-display";
 import { ScaleVisualizer } from "@/components/scale-visualizer";
-import { playNote, setReverbWet } from "@/lib/audio-engine";
+import {
+  InstrumentPreset,
+  INSTRUMENT_LABELS,
+  playNote,
+  setInstrument,
+  setReverbWet,
+} from "@/lib/audio-engine";
 
 export default function PianoPage() {
   const [activeNotes, setActiveNotes] = useState<number[]>([]);
   const [tab, setTab] = useState<"chord" | "scale">("chord");
   const [reverbWet, setReverbWetState] = useState(20);
+  const [instrument, setInstrumentState] = useState<InstrumentPreset>("piano");
 
   useEffect(() => {
     setReverbWet(reverbWet / 100);
   }, [reverbWet]);
+
+  useEffect(() => {
+    setInstrument(instrument);
+  }, [instrument]);
 
   const handleNoteClick = (midi: number) => {
     playNote(midi);
@@ -65,27 +76,53 @@ export default function PianoPage() {
       </div>
 
       {/* FX */}
-      <div className="flex justify-center items-center gap-3 flex-wrap">
-        <span
-          className="text-xs uppercase tracking-wider"
-          style={{ color: "var(--color-text-tertiary)" }}
-        >
-          🌊 Reverb
-        </span>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={reverbWet}
-          onChange={(e) => setReverbWetState(Number(e.target.value))}
-          className="w-40 accent-amber-400"
-        />
-        <span
-          className="text-xs font-mono w-8"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          {reverbWet}%
-        </span>
+      <div className="flex justify-center items-center gap-6 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span
+            className="text-xs uppercase tracking-wider"
+            style={{ color: "var(--color-text-tertiary)" }}
+          >
+            音色
+          </span>
+          <select
+            value={instrument}
+            onChange={(e) => setInstrumentState(e.target.value as InstrumentPreset)}
+            className="px-2 py-1.5 rounded-lg text-sm"
+            style={{
+              background: "var(--color-bg)",
+              color: "var(--color-text)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            {(Object.keys(INSTRUMENT_LABELS) as InstrumentPreset[]).map((p) => (
+              <option key={p} value={p}>
+                {INSTRUMENT_LABELS[p]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-xs uppercase tracking-wider"
+            style={{ color: "var(--color-text-tertiary)" }}
+          >
+            🌊 Reverb
+          </span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={reverbWet}
+            onChange={(e) => setReverbWetState(Number(e.target.value))}
+            className="w-40 accent-amber-400"
+          />
+          <span
+            className="text-xs font-mono w-8"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
+            {reverbWet}%
+          </span>
+        </div>
       </div>
 
       {/* Tab Switch */}
