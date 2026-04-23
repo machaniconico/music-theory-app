@@ -1,4 +1,4 @@
-import { NOTE_NAMES, noteIndex, noteName, CHORD_TYPES, SCALE_TYPES } from "./music-theory";
+import { noteIndex, noteName, CHORD_TYPES, SCALE_TYPES } from "./music-theory";
 
 export interface SecondaryDominant {
   /** Target degree (roman numeral) in the key, e.g. "II", "III", "IV", "V", "VI" */
@@ -69,15 +69,3 @@ export function getSecondaryDominants(key: string): SecondaryDominant[] {
   });
 }
 
-/** For a target degree, return MIDI for the V/X resolution sequence. */
-export function getResolutionProgression(key: string, targetIndex: number): number[][] {
-  const seconds = getSecondaryDominants(key);
-  const sec = seconds.find((s) => s.targetIndex === targetIndex);
-  if (!sec) return [];
-  return [sec.midiNotes, sec.targetMidiNotes];
-}
-
-/** Check that a given key is one of the 12 supported note names. */
-export function isSupportedKey(key: string): boolean {
-  return NOTE_NAMES.includes(key as never);
-}

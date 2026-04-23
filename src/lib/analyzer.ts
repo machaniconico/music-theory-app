@@ -118,20 +118,15 @@ function detectCadences(degrees: number[]): Cadence[] {
         description: "解決しそうで違う方向へ。意外性を演出。",
         position: i,
       });
-    } else if (i === degrees.length - 1 || next === 0) {
-      // handled above
     }
-    if (i === degrees.length - 1 && cur === 4) {
-      cadences.push({
-        type: "half",
-        label: "... → V 半終止",
-        description: "ドミナントで区切りをつける。続きの期待を作る。",
-        position: i,
-      });
-    }
-    if (cur === 4 && next === 0 && i < degrees.length - 2) {
-      // already added perfect above
-    }
+  }
+  if (degrees.length > 0 && degrees[degrees.length - 1] === 4) {
+    cadences.push({
+      type: "half",
+      label: "... → V 半終止",
+      description: "ドミナントで区切りをつける。続きの期待を作る。",
+      position: degrees.length - 1,
+    });
   }
   return cadences;
 }

@@ -1,4 +1,4 @@
-import { NOTE_NAMES, noteIndex, noteName, CHORD_TYPES, SCALE_TYPES } from "./music-theory";
+import { noteIndex, noteName, CHORD_TYPES, SCALE_TYPES } from "./music-theory";
 
 export interface BorrowedChord {
   /** Roman numeral label, e.g. "bIII", "iv", "bVI", "bVII" */
@@ -136,7 +136,3 @@ export function getPresetProgressions(key: string): PresetProgression[] {
   ];
 }
 
-/** Utility: guard for supported key. */
-export function isSupportedKey(key: string): boolean {
-  return NOTE_NAMES.includes(key as never);
-}

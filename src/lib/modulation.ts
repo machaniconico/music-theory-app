@@ -1,4 +1,4 @@
-import { NOTE_NAMES, noteIndex, noteName, CHORD_TYPES, SCALE_TYPES } from "./music-theory";
+import { noteIndex, noteName, CHORD_TYPES, SCALE_TYPES } from "./music-theory";
 
 export interface ModulationStep {
   label: string;
@@ -99,6 +99,3 @@ export function generateDirectModulation(fromKey: string, semitones: number): Mo
   };
 }
 
-export function isSupportedKey(key: string): boolean {
-  return NOTE_NAMES.includes(key as never);
-}

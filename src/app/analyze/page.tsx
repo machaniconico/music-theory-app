@@ -132,9 +132,7 @@ export default function AnalyzePage() {
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = funcColor; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${funcColor}44`; }}
                 >
-                  <span className="text-[10px] font-bold" style={{ color: funcColor }}>{d.degree}</span>
-                  <span className="text-sm font-bold" style={{ color: "var(--color-text)" }}>
-                    {analysis.chordNames[0] !== undefined ? "" : ""}
+                  <span className="text-xs font-bold" style={{ color: funcColor }}>
                     {d.degree}
                   </span>
                   <span className="text-[9px]" style={{ color: "var(--color-text-tertiary)" }}>
