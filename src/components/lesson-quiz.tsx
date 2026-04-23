@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LESSON_QUIZZES } from "@/lib/lesson-quizzes";
+import { markLessonCompleted } from "@/lib/lesson-progress";
 
 interface LessonQuizProps {
   lessonId: keyof typeof LESSON_QUIZZES;
@@ -14,11 +15,17 @@ export function LessonQuiz({ lessonId }: LessonQuizProps) {
   );
   const [submitted, setSubmitted] = useState(false);
 
-  if (!quiz) return null;
-
   const correctCount = answers.reduce<number>((acc, ans, i) => {
-    return acc + (ans === quiz.questions[i].correct ? 1 : 0);
+    return acc + (ans === (quiz?.questions[i]?.correct ?? -1) ? 1 : 0);
   }, 0);
+
+  useEffect(() => {
+    if (submitted && quiz && correctCount === quiz.questions.length) {
+      markLessonCompleted(lessonId);
+    }
+  }, [submitted, correctCount, quiz, lessonId]);
+
+  if (!quiz) return null;
 
   const allAnswered = answers.every((a) => a !== null);
 

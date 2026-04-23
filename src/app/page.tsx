@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getCompletedLessons, LESSON_IDS } from "@/lib/lesson-progress";
 
 const SECTIONS = [
   {
@@ -73,6 +77,16 @@ const TOOLS = [
 ];
 
 export default function Home() {
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setCompleted(new Set(getCompletedLessons()));
+  }, []);
+
+  const totalLessons = LESSON_IDS.length;
+  const doneCount = completed.size;
+  const pct = Math.round((doneCount / totalLessons) * 100);
+
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-12 space-y-20">
       {/* Hero */}
@@ -139,44 +153,87 @@ export default function Home() {
 
       {/* Learning Sections */}
       <section className="space-y-6">
-        <h2
-          className="text-center"
-          style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
-        >
-          学ぶ
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {SECTIONS.map((section, i) => (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="group rounded-2xl p-6 no-underline transition-all duration-300 animate-fade-in"
-              style={{
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-border-subtle)",
-                animationDelay: `${i * 80}ms`,
-              }}
+        <div className="text-center space-y-3">
+          <h2
+            style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
+          >
+            学ぶ
+          </h2>
+          <div className="flex items-center gap-3 justify-center flex-wrap">
+            <span
+              className="text-xs uppercase tracking-wider"
+              style={{ color: "var(--color-text-tertiary)" }}
             >
-              <div className="flex items-start gap-4">
-                <span className="text-3xl">{section.icon}</span>
-                <div>
-                  <h3
-                    className="text-base font-bold mb-1 group-hover:translate-x-1 transition-transform duration-200"
-                    style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
-                  >
-                    {section.title}
-                  </h3>
-                  <p className="text-sm m-0" style={{ color: "var(--color-text-secondary)" }}>
-                    {section.description}
-                  </p>
-                </div>
-              </div>
+              進捗
+            </span>
+            <div
+              className="relative w-40 h-2 rounded-full overflow-hidden"
+              style={{ background: "var(--color-bg-elevated)" }}
+            >
               <div
-                className="mt-4 h-0.5 w-0 group-hover:w-full transition-all duration-300"
-                style={{ background: section.color }}
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${pct}%`,
+                  background: "linear-gradient(90deg, var(--color-primary), var(--color-secondary))",
+                }}
               />
-            </Link>
-          ))}
+            </div>
+            <span
+              className="text-xs font-mono"
+              style={{ color: "var(--color-text-secondary)" }}
+            >
+              {doneCount}/{totalLessons} 完了
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {SECTIONS.map((section, i) => {
+            const lessonId = section.href.replace("/learn/", "");
+            const done = completed.has(lessonId);
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className="group rounded-2xl p-6 no-underline transition-all duration-300 animate-fade-in relative"
+                style={{
+                  background: "var(--color-surface)",
+                  border: `1px solid ${done ? "var(--color-accent-green)" : "var(--color-border-subtle)"}`,
+                  animationDelay: `${i * 80}ms`,
+                }}
+              >
+                {done && (
+                  <span
+                    className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{
+                      background: "var(--color-accent-green)",
+                      color: "oklch(0.15 0.02 155)",
+                    }}
+                    title="完了"
+                  >
+                    ✓
+                  </span>
+                )}
+                <div className="flex items-start gap-4">
+                  <span className="text-3xl">{section.icon}</span>
+                  <div>
+                    <h3
+                      className="text-base font-bold mb-1 group-hover:translate-x-1 transition-transform duration-200"
+                      style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
+                    >
+                      {section.title}
+                    </h3>
+                    <p className="text-sm m-0" style={{ color: "var(--color-text-secondary)" }}>
+                      {section.description}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className="mt-4 h-0.5 w-0 group-hover:w-full transition-all duration-300"
+                  style={{ background: section.color }}
+                />
+              </Link>
+            );
+          })}
         </div>
       </section>
 
