@@ -15,6 +15,7 @@ import {
 import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
 import { generateRandomProgression } from "@/lib/progression-generator";
 import { copyToClipboard, decodeBuilderState, encodeBuilderState } from "@/lib/share-url";
+import { loadBuilderPrefs, saveBuilderPrefs } from "@/lib/user-prefs";
 import { unlockAchievement } from "@/lib/achievements";
 import { StaffNotation } from "./staff-notation";
 
@@ -92,7 +93,16 @@ export function ProgressionBuilder() {
   useEffect(() => {
     setSavedList(getProgressions());
 
-    // Hash-based state restore
+    // 1. Load stored prefs first (non-destructive to progression)
+    const prefs = loadBuilderPrefs();
+    setKey(prefs.key);
+    setUseSeventh(prefs.useSeventh);
+    setTempo(prefs.tempo);
+    setRhythm(prefs.rhythm);
+    setReverbPct(prefs.reverbPct);
+    setBeatsPerChord(prefs.beatsPerChord);
+
+    // 2. Hash-based state restore (overrides prefs)
     if (typeof window !== "undefined" && window.location.hash) {
       const decoded = decodeBuilderState(window.location.hash);
       if (decoded) {
@@ -109,6 +119,14 @@ export function ProgressionBuilder() {
       }
     }
   }, []);
+
+  // Persist settings (debounced via rAF)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      saveBuilderPrefs({ key, useSeventh, tempo, rhythm, reverbPct, beatsPerChord });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [key, useSeventh, tempo, rhythm, reverbPct, beatsPerChord]);
 
   const handleShare = useCallback(async () => {
     if (typeof window === "undefined") return;
