@@ -58,6 +58,12 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: "進行ビルダーで3つ以上のコードを転回形にした",
     icon: "♻️",
   },
+  {
+    id: "week-master",
+    title: "週間達人",
+    description: "7日連続でアプリを使った",
+    icon: "📅",
+  },
 ];
 
 function readSet(): Set<string> {

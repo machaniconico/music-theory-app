@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getCompletedLessons, LESSON_IDS } from "@/lib/lesson-progress";
+import { recordVisit } from "@/lib/streak";
+import { unlockAchievement } from "@/lib/achievements";
 
 const SECTIONS = [
   {
@@ -78,9 +80,15 @@ const TOOLS = [
 
 export default function Home() {
   const [completed, setCompleted] = useState<Set<string>>(new Set());
+  const [streakCurrent, setStreakCurrent] = useState(0);
 
   useEffect(() => {
     setCompleted(new Set(getCompletedLessons()));
+    const s = recordVisit();
+    setStreakCurrent(s.current);
+    if (s.current >= 7) {
+      unlockAchievement("week-master");
+    }
   }, []);
 
   const totalLessons = LESSON_IDS.length;
@@ -106,6 +114,21 @@ export default function Home() {
           <br />
           視覚と音で、音楽の仕組みを直感的に理解できます。
         </p>
+        {streakCurrent > 0 && (
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm"
+            style={{
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-accent-rose)",
+              color: "var(--color-accent-rose)",
+            }}
+          >
+            <span>🔥</span>
+            <span>
+              {streakCurrent}日連続練習中
+            </span>
+          </div>
+        )}
       </section>
 
       {/* Tools */}
