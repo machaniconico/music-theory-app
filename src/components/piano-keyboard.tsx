@@ -34,6 +34,11 @@ const KEY_SEMITONE_MAP: Record<string, number> = {
   l: 14,  // D + oct
 };
 
+// Reverse lookup: semitone → QWERTY key
+const SEMITONE_TO_KEY: Record<number, string> = Object.fromEntries(
+  Object.entries(KEY_SEMITONE_MAP).map(([k, semi]) => [semi, k]),
+);
+
 export function PianoKeyboard({
   startMidi = 48, // C3
   endMidi = 72,   // C5
@@ -94,6 +99,13 @@ export function PianoKeyboard({
   }, [enableKeyboard, startMidi, endMidi, onNoteClick]);
 
   const combinedActive = kbdActive.length > 0 ? [...activeNotes, ...kbdActive] : activeNotes;
+
+  const qwertyLabelFor = (midi: number): string | null => {
+    if (!enableKeyboard) return null;
+    const octaveBase = Math.ceil(startMidi / 12) * 12;
+    const semi = midi - octaveBase;
+    return SEMITONE_TO_KEY[semi] ?? null;
+  };
   const whiteKeys: number[] = [];
   const blackKeys: { midi: number; position: number }[] = [];
 
@@ -196,6 +208,18 @@ export function PianoKeyboard({
                   {isC ? `${noteName}${midiToOctave(midi)}` : noteName}
                 </span>
               )}
+              {qwertyLabelFor(midi) && (
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 font-mono font-bold uppercase"
+                  style={{
+                    bottom: compact ? 18 : 22,
+                    color: "oklch(0.35 0.05 260)",
+                    fontSize: compact ? "10px" : "12px",
+                  }}
+                >
+                  {qwertyLabelFor(midi)}
+                </span>
+              )}
             </button>
           );
         })}
@@ -251,6 +275,17 @@ export function PianoKeyboard({
                   }}
                 >
                   {noteName}
+                </span>
+              )}
+              {qwertyLabelFor(midi) && (
+                <span
+                  className="absolute bottom-6 left-1/2 -translate-x-1/2 font-mono font-bold uppercase"
+                  style={{
+                    color: highlighted ? "oklch(0.20 0.02 75)" : "oklch(0.85 0.04 75)",
+                    fontSize: "10px",
+                  }}
+                >
+                  {qwertyLabelFor(midi)}
                 </span>
               )}
             </button>

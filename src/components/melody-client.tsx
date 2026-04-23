@@ -20,6 +20,7 @@ import {
 import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
 import { downloadMidi, exportArrangementToMidi } from "@/lib/midi-export";
 import { PianoKeyboard } from "./piano-keyboard";
+import { PianoRoll } from "./piano-roll";
 
 type TransportStatus = "idle" | "recording" | "playing";
 
@@ -260,6 +261,16 @@ export function MelodyClient() {
             );
           })}
         </div>
+        <div>
+          <div
+            className="text-xs uppercase tracking-wider mb-2"
+            style={{ color: "var(--color-text-tertiary)" }}
+          >
+            🎹 ピアノロール
+          </div>
+          <PianoRoll melody={melody} height={140} />
+        </div>
+
         <div>
           <div
             className="text-xs uppercase tracking-wider mb-2"
