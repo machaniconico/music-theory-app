@@ -47,6 +47,7 @@ export function suggestNextChords(degreesSoFar: number[], max = 3): ChordSuggest
   }
 
   const last = degreesSoFar[degreesSoFar.length - 1];
+  if (last < 0 || last >= DIATONIC_MAJOR.length) return [];
   const lastFunction = DIATONIC_MAJOR[last].function;
   const transitions = FUNCTION_TRANSITIONS[lastFunction];
 

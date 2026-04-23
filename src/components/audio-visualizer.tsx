@@ -40,26 +40,23 @@ export function AudioVisualizer({
     resize();
     window.addEventListener("resize", resize);
 
-    // Resolve color var to actual color using DOM
-    const probe = document.createElement("div");
-    probe.style.color = color;
-    document.body.appendChild(probe);
-    const resolvedColor = getComputedStyle(probe).color;
-    document.body.removeChild(probe);
-
     const fft = getFftAnalyser();
     const wave = getWaveformAnalyser();
+
+    // Read the live computed color from the canvas each frame so CSS var changes
+    // (theme toggle, etc.) propagate without remounting the component.
+    canvas.style.color = color;
 
     const draw = () => {
       const w = canvas.clientWidth;
       const h = canvas.clientHeight;
+      const resolvedColor = getComputedStyle(canvas).color;
       ctx.clearRect(0, 0, w, h);
 
       if (mode === "fft") {
         const values = fft.getValue() as Float32Array;
         const barWidth = w / values.length;
         for (let i = 0; i < values.length; i++) {
-          // fft values are in dB from -100 to 0 roughly
           const db = values[i];
           const norm = Math.max(0, (db + 100) / 100);
           const barH = norm * h;

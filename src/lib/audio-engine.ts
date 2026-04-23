@@ -128,12 +128,21 @@ function getSynth(): Tone.PolySynth {
 export function setInstrument(preset: InstrumentPreset): void {
   if (currentInstrument === preset && synth) return;
   currentInstrument = preset;
-  if (synth) {
-    synth.releaseAll();
-    synth.dispose();
-    synth = null;
+  const old = synth;
+  synth = buildSynth(preset);
+  isInitialized = true;
+  if (old) {
+    old.releaseAll();
+    // Defer dispose so in-flight scheduleOnce closures on the old synth
+    // can still trigger without hitting a disposed node.
+    setTimeout(() => {
+      try {
+        old.dispose();
+      } catch {
+        // already disposed
+      }
+    }, 2000);
   }
-  getSynth();
 }
 
 export function getInstrument(): InstrumentPreset {

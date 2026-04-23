@@ -85,7 +85,7 @@ export async function renderArrangementToWav(params: RenderParams): Promise<Blob
 
   const toneBuffer = await Tone.Offline(() => {
     const synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "triangle8" as never },
+      oscillator: { type: "triangle8" as "triangle" },
       envelope: { attack: 0.02, decay: 0.3, sustain: 0.4, release: 1.2 },
       volume: -8,
     }).toDestination();
@@ -167,7 +167,9 @@ export async function renderArrangementToWav(params: RenderParams): Promise<Blob
     });
   }, duration);
 
-  return audioBufferToWav(toneBuffer.get()!);
+  const rendered = toneBuffer.get();
+  if (!rendered) throw new Error("WAV rendering failed: empty buffer");
+  return audioBufferToWav(rendered);
 }
 
 /** Trigger a browser download for a WAV Blob. */
