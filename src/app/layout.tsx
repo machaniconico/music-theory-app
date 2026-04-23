@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AchievementToast } from "@/components/achievement-toast";
 import { Navigation } from "@/components/navigation";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -29,6 +30,7 @@ export default function RootLayout({
           {children}
         </main>
         <SiteFooter />
+        <AchievementToast />
       </body>
     </html>
   );

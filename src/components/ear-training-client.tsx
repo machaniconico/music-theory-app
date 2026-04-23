@@ -9,6 +9,7 @@ import {
   Quiz,
   generateQuiz,
 } from "@/lib/ear-training";
+import { unlockAchievement } from "@/lib/achievements";
 
 type Status = "setup" | "playing" | "answering" | "feedback";
 
@@ -53,12 +54,19 @@ export function EarTrainingClient() {
       setSelectedId(id);
       setStatus("feedback");
       const isCorrect = id === quiz.correctId;
-      setScore((prev) => ({
-        correct: prev.correct + (isCorrect ? 1 : 0),
-        total: prev.total + 1,
-        streak: isCorrect ? prev.streak + 1 : 0,
-        bestStreak: isCorrect ? Math.max(prev.bestStreak, prev.streak + 1) : prev.bestStreak,
-      }));
+      setScore((prev) => {
+        const newStreak = isCorrect ? prev.streak + 1 : 0;
+        if (isCorrect) {
+          unlockAchievement("first-ear-correct");
+          if (newStreak >= 10) unlockAchievement("streak-10");
+        }
+        return {
+          correct: prev.correct + (isCorrect ? 1 : 0),
+          total: prev.total + 1,
+          streak: newStreak,
+          bestStreak: isCorrect ? Math.max(prev.bestStreak, newStreak) : prev.bestStreak,
+        };
+      });
     },
     [quiz, status],
   );

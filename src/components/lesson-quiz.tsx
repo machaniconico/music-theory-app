@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { LESSON_QUIZZES } from "@/lib/lesson-quizzes";
-import { markLessonCompleted } from "@/lib/lesson-progress";
+import {
+  getCompletedLessons,
+  LESSON_IDS,
+  markLessonCompleted,
+} from "@/lib/lesson-progress";
+import { unlockAchievement } from "@/lib/achievements";
 
 interface LessonQuizProps {
   lessonId: keyof typeof LESSON_QUIZZES;
@@ -20,8 +25,15 @@ export function LessonQuiz({ lessonId }: LessonQuizProps) {
   }, 0);
 
   useEffect(() => {
+    if (submitted && quiz && correctCount > 0) {
+      unlockAchievement("first-quiz");
+    }
     if (submitted && quiz && correctCount === quiz.questions.length) {
       markLessonCompleted(lessonId);
+      const done = getCompletedLessons();
+      if (LESSON_IDS.every((id) => done.includes(id))) {
+        unlockAchievement("all-lessons");
+      }
     }
   }, [submitted, correctCount, quiz, lessonId]);
 

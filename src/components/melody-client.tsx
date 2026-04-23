@@ -19,6 +19,7 @@ import {
 } from "@/lib/audio-engine";
 import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
 import { downloadMidi, exportArrangementToMidi } from "@/lib/midi-export";
+import { unlockAchievement } from "@/lib/achievements";
 import { PianoKeyboard } from "./piano-keyboard";
 import { PianoRoll } from "./piano-roll";
 
@@ -85,6 +86,7 @@ export function MelodyClient() {
     const baseName = preset.name.toLowerCase().replace(/\s+/g, "-");
     const filename = `${baseName}-${key}-${tempo}bpm`;
     downloadMidi(blob, filename);
+    unlockAchievement("first-midi");
   }, [chordsMidi, melody, tempo, preset.name, key]);
 
   const handleNoteClick = useCallback(
@@ -109,6 +111,7 @@ export function MelodyClient() {
           return next;
         });
         lastNoteTimeRef.current = now;
+        unlockAchievement("first-melody");
       }
     },
     [status],

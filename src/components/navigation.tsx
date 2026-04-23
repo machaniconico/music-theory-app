@@ -28,6 +28,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/builder", label: "進行ビルダー" },
   { href: "/melody", label: "メロディ" },
   { href: "/ear-training", label: "耳コピ練習" },
+  { href: "/achievements", label: "🏆" },
 ];
 
 export function Navigation() {

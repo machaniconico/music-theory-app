@@ -15,6 +15,7 @@ import {
 import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
 import { generateRandomProgression } from "@/lib/progression-generator";
 import { copyToClipboard, decodeBuilderState, encodeBuilderState } from "@/lib/share-url";
+import { unlockAchievement } from "@/lib/achievements";
 import { StaffNotation } from "./staff-notation";
 
 interface BuilderChord {
@@ -141,6 +142,7 @@ export function ProgressionBuilder() {
     setSaveName("");
     setShowSaveInput(false);
     refreshSaved();
+    unlockAchievement("first-save");
   }, [saveName, key, useSeventh, tempo, progression, refreshSaved]);
 
   const handleLoad = useCallback((saved: SavedProgression) => {
@@ -272,6 +274,10 @@ export function ProgressionBuilder() {
       const chordSize = CHORD_TYPES[quality].intervals.length;
       const nextInv = ((chord.inversion ?? 0) + 1) % chordSize;
       next[index] = { ...chord, inversion: nextInv };
+      const invCount = next.filter((c) => (c.inversion ?? 0) > 0).length;
+      if (invCount >= 3) {
+        unlockAchievement("inversion-master");
+      }
       return next;
     });
   };
