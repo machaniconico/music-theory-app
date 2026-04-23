@@ -97,6 +97,12 @@ const TOOLS = [
     href: "/melody",
     gradient: "linear-gradient(135deg, var(--color-secondary), var(--color-accent-blue))",
   },
+  {
+    title: "楽曲解析",
+    description: "コード進行を入力して機能・カデンツ・定番進行を自動判定",
+    href: "/analyze",
+    gradient: "linear-gradient(135deg, var(--color-primary), var(--color-accent-blue))",
+  },
 ];
 
 export default function Home() {

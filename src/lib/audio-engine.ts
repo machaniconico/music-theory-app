@@ -59,7 +59,29 @@ let snare: Tone.NoiseSynth | null = null;
 let hat: Tone.MetalSynth | null = null;
 let bass: Tone.MonoSynth | null = null;
 let reverb: Tone.Reverb | null = null;
+let fftAnalyser: Tone.Analyser | null = null;
+let waveformAnalyser: Tone.Analyser | null = null;
 let isInitialized = false;
+
+function getOrCreateAnalysers(): { fft: Tone.Analyser; waveform: Tone.Analyser } {
+  if (!fftAnalyser) {
+    fftAnalyser = new Tone.Analyser("fft", 128);
+    Tone.getDestination().connect(fftAnalyser);
+  }
+  if (!waveformAnalyser) {
+    waveformAnalyser = new Tone.Analyser("waveform", 512);
+    Tone.getDestination().connect(waveformAnalyser);
+  }
+  return { fft: fftAnalyser, waveform: waveformAnalyser };
+}
+
+export function getFftAnalyser(): Tone.Analyser {
+  return getOrCreateAnalysers().fft;
+}
+
+export function getWaveformAnalyser(): Tone.Analyser {
+  return getOrCreateAnalysers().waveform;
+}
 
 function getReverbBus(): Tone.Reverb {
   if (!reverb) {

@@ -29,6 +29,7 @@ import { copyToClipboard, decodeBuilderState, encodeBuilderState } from "@/lib/s
 import { loadBuilderPrefs, saveBuilderPrefs } from "@/lib/user-prefs";
 import { unlockAchievement } from "@/lib/achievements";
 import { StaffNotation } from "./staff-notation";
+import { AudioVisualizer } from "./audio-visualizer";
 
 interface BuilderChord {
   degreeIndex: number;
@@ -726,6 +727,14 @@ export function ProgressionBuilder() {
           </div>
           </>
         )}
+      </div>
+
+      {/* Audio Visualizer */}
+      <div
+        className="rounded-2xl p-6"
+        style={{ background: "var(--color-surface)", border: "1px solid var(--color-border-subtle)" }}
+      >
+        <AudioVisualizer height={120} />
       </div>
 
       {/* Next Chord Suggestions */}

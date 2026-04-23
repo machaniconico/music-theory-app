@@ -165,6 +165,17 @@ export function PianoKeyboard({
             <button
               key={midi}
               onClick={() => onNoteClick?.(midi)}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.transform = "translateY(1px)";
+                onNoteClick?.(midi);
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+              onTouchCancel={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
               className="absolute top-0 border-0 cursor-pointer transition-all"
               style={{
                 left: `${i * whiteKeyWidth}px`,
@@ -183,6 +194,7 @@ export function PianoKeyboard({
                   : "inset 0 -4px 8px oklch(0 0 0 / 0.08), 0 2px 4px oklch(0 0 0 / 0.15)",
                 transitionDuration: "var(--duration-fast)",
                 transitionTimingFunction: "var(--ease-out)",
+                touchAction: "manipulation",
                 zIndex: 1,
               }}
               onMouseDown={(e) => {
@@ -234,6 +246,17 @@ export function PianoKeyboard({
             <button
               key={midi}
               onClick={() => onNoteClick?.(midi)}
+              onTouchStart={(e) => {
+                e.preventDefault();
+                e.currentTarget.style.transform = "translateY(1px)";
+                onNoteClick?.(midi);
+              }}
+              onTouchEnd={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+              onTouchCancel={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
               className="absolute top-0 border-0 cursor-pointer transition-all"
               style={{
                 left: `${position}px`,
@@ -252,6 +275,7 @@ export function PianoKeyboard({
                   : "0 3px 6px oklch(0 0 0 / 0.5), inset 0 -2px 4px oklch(0 0 0 / 0.3)",
                 transitionDuration: "var(--duration-fast)",
                 transitionTimingFunction: "var(--ease-out)",
+                touchAction: "manipulation",
                 zIndex: 2,
               }}
               onMouseDown={(e) => {

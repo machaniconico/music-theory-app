@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { PianoKeyboard } from "@/components/piano-keyboard";
 import { ChordDisplay } from "@/components/chord-display";
 import { ScaleVisualizer } from "@/components/scale-visualizer";
+import { AudioVisualizer } from "@/components/audio-visualizer";
 import {
   InstrumentPreset,
   INSTRUMENT_LABELS,
@@ -123,6 +124,11 @@ export default function PianoPage() {
             {reverbWet}%
           </span>
         </div>
+      </div>
+
+      {/* Visualizer */}
+      <div className="max-w-3xl mx-auto w-full">
+        <AudioVisualizer height={120} />
       </div>
 
       {/* Tab Switch */}

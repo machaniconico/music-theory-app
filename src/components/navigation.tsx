@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/builder", label: "進行ビルダー" },
   { href: "/melody", label: "メロディ" },
   { href: "/ear-training", label: "耳コピ練習" },
+  { href: "/analyze", label: "🔎 解析" },
   { href: "/achievements", label: "🏆" },
 ];
 
@@ -197,11 +198,12 @@ export function Navigation() {
                     key={child.href}
                     href={child.href}
                     onClick={() => setMobileOpen(false)}
-                    className="block px-3 py-2.5 rounded-lg text-sm no-underline transition-colors"
+                    className="block px-3 py-3 rounded-lg text-sm no-underline transition-colors"
                     style={{
                       color: pathname === child.href
                         ? "var(--color-primary)"
                         : "var(--color-text-secondary)",
+                      minHeight: 44,
                     }}
                   >
                     {child.label}
@@ -213,11 +215,12 @@ export function Navigation() {
                 key={(item as NavLink).href}
                 href={(item as NavLink).href}
                 onClick={() => setMobileOpen(false)}
-                className="block px-3 py-2.5 rounded-lg text-sm no-underline transition-colors"
+                className="block px-3 py-3 rounded-lg text-sm no-underline transition-colors"
                 style={{
                   color: pathname === (item as NavLink).href
                     ? "var(--color-primary)"
                     : "var(--color-text-secondary)",
+                  minHeight: 44,
                 }}
               >
                 {item.label}
