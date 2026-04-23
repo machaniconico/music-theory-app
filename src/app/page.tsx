@@ -49,6 +49,27 @@ const SECTIONS = [
     icon: "✨",
     color: "var(--color-secondary)",
   },
+  {
+    title: "セカンダリードミナント",
+    description: "V/X で一時的に別のコードをトニック化する",
+    href: "/learn/secondary-dominants",
+    icon: "🎯",
+    color: "var(--color-primary)",
+  },
+  {
+    title: "モーダルインターチェンジ",
+    description: "同主調マイナーから借用和音を持ってくる",
+    href: "/learn/modal-interchange",
+    icon: "🔀",
+    color: "var(--color-accent-blue)",
+  },
+  {
+    title: "転調",
+    description: "ピボット/直接転調で曲の調を切り替える",
+    href: "/learn/modulation",
+    icon: "🚀",
+    color: "var(--color-accent-rose)",
+  },
 ];
 
 const TOOLS = [

@@ -9,6 +9,9 @@ export const LESSON_IDS = [
   "diatonic",
   "progressions",
   "tensions",
+  "secondary-dominants",
+  "modal-interchange",
+  "modulation",
 ] as const;
 
 export type LessonId = (typeof LESSON_IDS)[number];
