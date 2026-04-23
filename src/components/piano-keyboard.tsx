@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { isBlackKey, midiToNoteName, midiToOctave } from "@/lib/music-theory";
 
 interface PianoKeyboardProps {
@@ -12,7 +12,27 @@ interface PianoKeyboardProps {
   onNoteClick?: (midi: number) => void;
   showLabels?: boolean;
   compact?: boolean;
+  /** Enable QWERTY keyboard input (a/s/d/f/g/h/j/k/l = white, w/e/t/y/u = black) */
+  enableKeyboard?: boolean;
 }
+
+// QWERTY → semitones from the lowest C in the mapped octave
+const KEY_SEMITONE_MAP: Record<string, number> = {
+  a: 0,   // C
+  w: 1,   // C#
+  s: 2,   // D
+  e: 3,   // D#
+  d: 4,   // E
+  f: 5,   // F
+  t: 6,   // F#
+  g: 7,   // G
+  y: 8,   // G#
+  h: 9,   // A
+  u: 10,  // A#
+  j: 11,  // B
+  k: 12,  // C + oct
+  l: 14,  // D + oct
+};
 
 export function PianoKeyboard({
   startMidi = 48, // C3
@@ -23,7 +43,57 @@ export function PianoKeyboard({
   onNoteClick,
   showLabels = true,
   compact = false,
+  enableKeyboard = false,
 }: PianoKeyboardProps) {
+  const [kbdActive, setKbdActive] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (!enableKeyboard) return;
+
+    const octaveBase = Math.ceil(startMidi / 12) * 12; // first C >= startMidi
+    const pressed = new Set<number>();
+
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      return (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement
+      );
+    };
+
+    const keydown = (e: KeyboardEvent) => {
+      if (isEditableTarget(e.target)) return;
+      if (e.repeat) return;
+      const k = e.key.toLowerCase();
+      const semi = KEY_SEMITONE_MAP[k];
+      if (semi === undefined) return;
+      const midi = octaveBase + semi;
+      if (midi < startMidi || midi > endMidi) return;
+      if (pressed.has(midi)) return;
+      pressed.add(midi);
+      setKbdActive((prev) => [...prev, midi]);
+      onNoteClick?.(midi);
+      e.preventDefault();
+    };
+
+    const keyup = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      const semi = KEY_SEMITONE_MAP[k];
+      if (semi === undefined) return;
+      const midi = octaveBase + semi;
+      pressed.delete(midi);
+      setKbdActive((prev) => prev.filter((n) => n !== midi));
+    };
+
+    window.addEventListener("keydown", keydown);
+    window.addEventListener("keyup", keyup);
+    return () => {
+      window.removeEventListener("keydown", keydown);
+      window.removeEventListener("keyup", keyup);
+    };
+  }, [enableKeyboard, startMidi, endMidi, onNoteClick]);
+
+  const combinedActive = kbdActive.length > 0 ? [...activeNotes, ...kbdActive] : activeNotes;
   const whiteKeys: number[] = [];
   const blackKeys: { midi: number; position: number }[] = [];
 
@@ -56,8 +126,8 @@ export function PianoKeyboard({
   );
 
   const isActive = useCallback(
-    (midi: number) => activeNotes.includes(midi),
-    [activeNotes]
+    (midi: number) => combinedActive.includes(midi),
+    [combinedActive]
   );
 
   return (

@@ -8,7 +8,25 @@ let kick: Tone.MembraneSynth | null = null;
 let snare: Tone.NoiseSynth | null = null;
 let hat: Tone.MetalSynth | null = null;
 let bass: Tone.MonoSynth | null = null;
+let reverb: Tone.Reverb | null = null;
 let isInitialized = false;
+
+function getReverbBus(): Tone.Reverb {
+  if (!reverb) {
+    reverb = new Tone.Reverb({ decay: 3, wet: 0.2 }).toDestination();
+  }
+  return reverb;
+}
+
+export function setReverbWet(wet: number): void {
+  const r = getReverbBus();
+  r.wet.value = Math.max(0, Math.min(1, wet));
+}
+
+export function getReverbWet(): number {
+  if (!reverb) return 0.2;
+  return typeof reverb.wet.value === "number" ? reverb.wet.value : 0.2;
+}
 
 async function ensureContext() {
   if (Tone.getContext().state !== "running") {
@@ -27,7 +45,8 @@ function getSynth(): Tone.PolySynth {
         release: 1.2,
       },
       volume: -8,
-    }).toDestination();
+    });
+    synth.connect(getReverbBus());
     isInitialized = true;
   }
   return synth;

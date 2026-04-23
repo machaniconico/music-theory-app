@@ -5,7 +5,7 @@ import {
   NOTE_NAMES, CHORD_TYPES, DIATONIC_MAJOR, DIATONIC_MAJOR_7TH,
   SCALE_TYPES, PRESET_PROGRESSIONS, getDiatonicChordName,
 } from "@/lib/music-theory";
-import { playArrangement, playChord, stopAll } from "@/lib/audio-engine";
+import { playArrangement, playChord, setReverbWet, stopAll } from "@/lib/audio-engine";
 import {
   SavedProgression,
   deleteProgression,
@@ -14,6 +14,7 @@ import {
 } from "@/lib/storage";
 import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
 import { generateRandomProgression } from "@/lib/progression-generator";
+import { copyToClipboard, decodeBuilderState, encodeBuilderState } from "@/lib/share-url";
 import { StaffNotation } from "./staff-notation";
 
 interface BuilderChord {
@@ -37,13 +38,52 @@ export function ProgressionBuilder() {
   const [saveName, setSaveName] = useState("");
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [rhythm, setRhythm] = useState<RhythmPattern>("off");
+  const [shareMessage, setShareMessage] = useState("");
+  const [reverbPct, setReverbPct] = useState(20);
+
+  useEffect(() => {
+    setReverbWet(reverbPct / 100);
+  }, [reverbPct]);
 
   const diatonic = useSeventh ? DIATONIC_MAJOR_7TH : DIATONIC_MAJOR;
   const majorScale = SCALE_TYPES.major;
 
   useEffect(() => {
     setSavedList(getProgressions());
+
+    // Hash-based state restore
+    if (typeof window !== "undefined" && window.location.hash) {
+      const decoded = decodeBuilderState(window.location.hash);
+      if (decoded) {
+        setKey(decoded.key);
+        setUseSeventh(decoded.useSeventh);
+        setTempo(decoded.tempo);
+        setRhythm(decoded.rhythm);
+        setProgression(
+          decoded.degrees.map((d) => ({
+            degreeIndex: d,
+            name: getDiatonicChordName(decoded.key, d, decoded.useSeventh),
+          })),
+        );
+      }
+    }
   }, []);
+
+  const handleShare = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    const hash = encodeBuilderState({
+      key,
+      useSeventh,
+      tempo,
+      degrees: progression.map((c) => c.degreeIndex),
+      rhythm,
+    });
+    const url = `${window.location.origin}${window.location.pathname}#${hash}`;
+    const ok = await copyToClipboard(url);
+    setShareMessage(ok ? "📋 URLをコピーしました" : "⚠️ コピーに失敗しました");
+    window.history.replaceState(null, "", `#${hash}`);
+    setTimeout(() => setShareMessage(""), 2400);
+  }, [key, useSeventh, tempo, progression, rhythm]);
 
   const refreshSaved = useCallback(() => {
     setSavedList(getProgressions());
@@ -251,6 +291,21 @@ export function ProgressionBuilder() {
                 ))}
               </select>
             </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>🌊 Reverb</label>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={reverbPct}
+                onChange={(e) => setReverbPct(Number(e.target.value))}
+                className="w-20 accent-amber-400"
+              />
+              <span className="text-xs font-mono w-8" style={{ color: "var(--color-text-secondary)" }}>
+                {reverbPct}%
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -316,7 +371,18 @@ export function ProgressionBuilder() {
           <h3 className="text-lg font-bold m-0" style={{ fontFamily: "var(--font-display)" }}>
             コード進行
           </h3>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
+            {shareMessage && (
+              <span
+                className="text-xs px-2 py-1 rounded-md animate-fade-in"
+                style={{
+                  background: "var(--color-accent-blue)",
+                  color: "oklch(0.15 0.02 240)",
+                }}
+              >
+                {shareMessage}
+              </span>
+            )}
             <button
               onClick={handleRandomize}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer"
@@ -339,6 +405,15 @@ export function ProgressionBuilder() {
               style={{ background: "var(--color-bg)", color: "var(--color-accent-green)", border: "1px solid var(--color-accent-green)" }}
             >
               💾 保存
+            </button>
+            <button
+              onClick={handleShare}
+              disabled={progression.length === 0}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "var(--color-bg)", color: "var(--color-accent-blue)", border: "1px solid var(--color-accent-blue)" }}
+              title="現在の進行状態をURLに埋め込んでコピー"
+            >
+              🔗 URLコピー
             </button>
             <button
               onClick={handlePlay}

@@ -84,6 +84,35 @@ export function EarTrainingClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, difficulty]);
 
+  // キーボードショートカット
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) return;
+
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (status === "setup") {
+          void startQuiz();
+        } else if (status === "answering") {
+          void replay();
+        }
+      } else if (status === "answering" && quiz && /^Digit[1-4]$/.test(e.code)) {
+        const idx = Number(e.code.replace("Digit", "")) - 1;
+        if (idx < quiz.options.length) {
+          answer(quiz.options[idx].id);
+        }
+      } else if (status === "feedback" && (e.code === "Enter" || e.key.toLowerCase() === "n")) {
+        void nextQuiz();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [status, quiz, startQuiz, replay, answer, nextQuiz]);
+
   return (
     <div className="max-w-3xl mx-auto px-4 md:px-6 py-12 space-y-10">
       {/* Header */}
@@ -362,6 +391,50 @@ export function EarTrainingClient() {
           <li>コードは<strong>3度の響き</strong>（明るい／暗い）から聴き取ると早い。</li>
           <li>進行は<strong>最後の解決感</strong>に注目。終止形で判別できる。</li>
         </ul>
+      </section>
+
+      {/* Keyboard Shortcuts */}
+      <section
+        className="rounded-2xl p-5 text-sm"
+        style={{
+          background: "var(--color-bg-elevated)",
+          border: "1px solid var(--color-border-subtle)",
+          color: "var(--color-text-secondary)",
+        }}
+      >
+        <h4
+          className="mb-3 text-sm font-semibold"
+          style={{ fontFamily: "var(--font-display)", color: "var(--color-text)" }}
+        >
+          ⌨ キーボードショートカット
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          {[
+            { keys: ["Space"], action: "再生 / もう一度聴く" },
+            { keys: ["1", "2", "3", "4"], action: "選択肢 A / B / C / D を選ぶ" },
+            { keys: ["Enter", "N"], action: "次の問題へ" },
+          ].map((item) => (
+            <div key={item.action} className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {item.keys.map((k) => (
+                  <kbd
+                    key={k}
+                    className="px-2 py-0.5 rounded font-mono text-[11px]"
+                    style={{
+                      background: "var(--color-surface)",
+                      border: "1px solid var(--color-border)",
+                      color: "var(--color-text)",
+                      boxShadow: "0 1px 2px oklch(0 0 0 / 0.2)",
+                    }}
+                  >
+                    {k}
+                  </kbd>
+                ))}
+              </div>
+              <span>{item.action}</span>
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

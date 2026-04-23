@@ -403,6 +403,7 @@ export function MelodyClient() {
           activeNotes={[]}
           onNoteClick={handleNoteClick}
           compact
+          enableKeyboard
         />
       </div>
 
