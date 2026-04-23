@@ -227,16 +227,25 @@ export async function playArrangement(params: {
   pattern: RhythmPattern;
   melody?: MelodyNote[];
   onChordChange?: (i: number) => void;
+  /** Beats per chord. Default 2. */
+  beatsPerChord?: number;
 }): Promise<void> {
-  const { chordsMidi, tempo, pattern, melody = [], onChordChange } = params;
+  const {
+    chordsMidi,
+    tempo,
+    pattern,
+    melody = [],
+    onChordChange,
+    beatsPerChord = 2,
+  } = params;
   await ensureContext();
   const s = getSynth();
   const k = pattern !== "off" ? getDrumKit() : null;
 
   const beatDuration = 60 / tempo;
   const sixteenth = beatDuration / 4;
-  const chordSpan = beatDuration * 2;
-  const stepsPerChord = 8;
+  const chordSpan = beatDuration * beatsPerChord;
+  const stepsPerChord = beatsPerChord * 4;
 
   const startAt = Tone.now() + 0.15;
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navigation } from "@/components/navigation";
+import { SiteFooter } from "@/components/site-footer";
 
 export const metadata: Metadata = {
   title: "Music Theory Lab - コード理論を学ぼう",
@@ -27,6 +28,7 @@ export default function RootLayout({
         <main className="pt-16">
           {children}
         </main>
+        <SiteFooter />
       </body>
     </html>
   );

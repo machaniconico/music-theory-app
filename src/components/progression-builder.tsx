@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   NOTE_NAMES, CHORD_TYPES, DIATONIC_MAJOR, DIATONIC_MAJOR_7TH,
   SCALE_TYPES, PRESET_PROGRESSIONS, getDiatonicChordName,
@@ -20,6 +20,20 @@ import { StaffNotation } from "./staff-notation";
 interface BuilderChord {
   degreeIndex: number;
   name: string;
+  /** 0 = root position, 1 = 1st inversion, 2 = 2nd, 3 = 3rd (seventh only) */
+  inversion?: number;
+}
+
+function applyInversion(notes: number[], inversion: number): number[] {
+  const n = notes.length;
+  if (!inversion || inversion <= 0 || n <= 1) return notes;
+  const inv = ((inversion % n) + n) % n;
+  const rotated = [...notes];
+  for (let i = 0; i < inv; i++) {
+    const head = rotated.shift()!;
+    rotated.push(head + 12);
+  }
+  return rotated;
 }
 
 export function ProgressionBuilder() {
@@ -40,10 +54,36 @@ export function ProgressionBuilder() {
   const [rhythm, setRhythm] = useState<RhythmPattern>("off");
   const [shareMessage, setShareMessage] = useState("");
   const [reverbPct, setReverbPct] = useState(20);
+  const [loop, setLoop] = useState(false);
+  const [beatsPerChord, setBeatsPerChord] = useState(2);
+  const loopRef = useRef(false);
+  const handlePlayRef = useRef<() => Promise<void> | void>(() => {});
 
   useEffect(() => {
     setReverbWet(reverbPct / 100);
   }, [reverbPct]);
+
+  useEffect(() => {
+    loopRef.current = loop;
+  }, [loop]);
+
+  // Space キーで再生/停止（handlePlayRef 経由で最新版を呼ぶ）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement ||
+        e.target instanceof HTMLButtonElement
+      ) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        void handlePlayRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const diatonic = useSeventh ? DIATONIC_MAJOR_7TH : DIATONIC_MAJOR;
   const majorScale = SCALE_TYPES.major;
@@ -172,6 +212,7 @@ export function ProgressionBuilder() {
 
   const handlePlay = async () => {
     if (isPlaying) {
+      loopRef.current = false;
       await stopAll();
       setIsPlaying(false);
       setPlayingIndex(-1);
@@ -179,15 +220,23 @@ export function ProgressionBuilder() {
     }
 
     setIsPlaying(true);
-    await playArrangement({
-      chordsMidi,
-      tempo,
-      pattern: rhythm,
-      onChordChange: (idx) => setPlayingIndex(idx),
-    });
+    loopRef.current = loop;
+    do {
+      await playArrangement({
+        chordsMidi,
+        tempo,
+        pattern: rhythm,
+        beatsPerChord,
+        onChordChange: (idx) => setPlayingIndex(idx),
+      });
+      if (!loopRef.current) break;
+    } while (loopRef.current);
     setIsPlaying(false);
     setPlayingIndex(-1);
   };
+
+  // 最新の handlePlay を ref に保持（Spaceショートカットから参照）
+  handlePlayRef.current = handlePlay;
 
   const handleChordClick = (degreeIndex: number) => {
     const rootIdx = NOTE_NAMES.indexOf(key as never);
@@ -211,8 +260,21 @@ export function ProgressionBuilder() {
     const quality = diatonic[c.degreeIndex].quality;
     const chordType = CHORD_TYPES[quality];
     const rootMidi = 48 + (chordRootSemitone % 12);
-    return chordType.intervals.map((i) => rootMidi + i);
+    const notes = chordType.intervals.map((i) => rootMidi + i);
+    return applyInversion(notes, c.inversion ?? 0);
   });
+
+  const cycleInversion = (index: number) => {
+    setProgression((prev) => {
+      const next = [...prev];
+      const chord = next[index];
+      const quality = diatonic[chord.degreeIndex].quality;
+      const chordSize = CHORD_TYPES[quality].intervals.length;
+      const nextInv = ((chord.inversion ?? 0) + 1) % chordSize;
+      next[index] = { ...chord, inversion: nextInv };
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-8">
@@ -305,6 +367,28 @@ export function ProgressionBuilder() {
               <span className="text-xs font-mono w-8" style={{ color: "var(--color-text-secondary)" }}>
                 {reverbPct}%
               </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+                コード長
+              </label>
+              <div className="flex gap-1">
+                {[1, 2, 4].map((b) => (
+                  <button
+                    key={b}
+                    onClick={() => setBeatsPerChord(b)}
+                    className="px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer"
+                    style={{
+                      background: beatsPerChord === b ? "var(--color-accent-green)" : "var(--color-bg)",
+                      color: beatsPerChord === b ? "oklch(0.15 0.02 155)" : "var(--color-text-secondary)",
+                      border: `1px solid ${beatsPerChord === b ? "var(--color-accent-green)" : "var(--color-border)"}`,
+                    }}
+                  >
+                    {b}拍
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -416,6 +500,18 @@ export function ProgressionBuilder() {
               🔗 URLコピー
             </button>
             <button
+              onClick={() => setLoop((v) => !v)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer"
+              style={{
+                background: loop ? "var(--color-secondary-muted)" : "var(--color-bg)",
+                color: loop ? "var(--color-secondary)" : "var(--color-text-secondary)",
+                border: `1px solid ${loop ? "var(--color-secondary)" : "var(--color-border)"}`,
+              }}
+              title="ループ再生"
+            >
+              🔁 ループ{loop ? " ON" : ""}
+            </button>
+            <button
               onClick={handlePlay}
               className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer border-0"
               style={{
@@ -485,6 +581,34 @@ export function ProgressionBuilder() {
                   <span className="text-lg font-bold" style={{ color: playing ? "oklch(0.15 0.02 0)" : "var(--color-text)" }}>
                     {chord.name}
                   </span>
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                    style={{
+                      background: playing ? "oklch(1 0 0 / 0.25)" : `${funcColor}22`,
+                      color: playing ? "oklch(0.15 0.02 0)" : funcColor,
+                    }}
+                  >
+                    {d.function}
+                  </span>
+                  <button
+                    onClick={() => cycleInversion(i)}
+                    className="absolute -top-2 -left-2 w-5 h-5 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer border-0"
+                    style={{ background: "var(--color-accent-blue)", color: "white" }}
+                    title="転回形を切り替え"
+                  >
+                    ↻
+                  </button>
+                  {(chord.inversion ?? 0) > 0 && (
+                    <span
+                      className="absolute -top-2 left-4 text-[10px] font-bold px-1 py-0.5 rounded"
+                      style={{
+                        background: "var(--color-accent-blue)",
+                        color: "white",
+                      }}
+                    >
+                      {chord.inversion === 1 ? "1st" : chord.inversion === 2 ? "2nd" : "3rd"}
+                    </span>
+                  )}
                   <button
                     onClick={() => removeChord(i)}
                     className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer border-0"
