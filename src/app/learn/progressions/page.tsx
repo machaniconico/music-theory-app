@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { NOTE_NAMES, DIATONIC_MAJOR, CHORD_TYPES, SCALE_TYPES, PRESET_PROGRESSIONS, getDiatonicChordName, getChordMidiNotes } from "@/lib/music-theory";
 import { playChord, playProgression, stopAll } from "@/lib/audio-engine";
+import { LessonQuiz } from "@/components/lesson-quiz";
 import Link from "next/link";
 
 export default function ProgressionsPage() {
@@ -193,6 +194,9 @@ export default function ProgressionsPage() {
           </svg>
         </Link>
       </section>
+
+      {/* Quiz */}
+      <LessonQuiz lessonId="progressions" />
 
       {/* Navigation */}
       <div className="flex justify-between pt-4" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>

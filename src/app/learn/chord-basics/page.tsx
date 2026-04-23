@@ -1,6 +1,7 @@
 "use client";
 
 import { ChordDisplay } from "@/components/chord-display";
+import { LessonQuiz } from "@/components/lesson-quiz";
 import Link from "next/link";
 
 export default function ChordBasicsPage() {
@@ -125,6 +126,9 @@ export default function ChordBasicsPage() {
         </p>
         <ChordDisplay initialRoot="C" initialType="major" />
       </section>
+
+      {/* Quiz */}
+      <LessonQuiz lessonId="chord-basics" />
 
       {/* Navigation */}
       <div className="flex justify-end pt-4" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>

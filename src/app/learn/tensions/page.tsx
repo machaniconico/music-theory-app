@@ -1,6 +1,7 @@
 "use client";
 
 import { ChordDisplay } from "@/components/chord-display";
+import { LessonQuiz } from "@/components/lesson-quiz";
 import Link from "next/link";
 
 export default function TensionsPage() {
@@ -157,6 +158,9 @@ export default function TensionsPage() {
         </p>
         <ChordDisplay initialRoot="C" initialType="add9" />
       </section>
+
+      {/* Quiz */}
+      <LessonQuiz lessonId="tensions" />
 
       {/* Navigation */}
       <div className="flex justify-between pt-4" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>

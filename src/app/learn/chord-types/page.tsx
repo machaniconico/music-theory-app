@@ -2,6 +2,7 @@
 
 import { CHORD_TYPES, getChordNotes, getChordMidiNotes } from "@/lib/music-theory";
 import { playChord } from "@/lib/audio-engine";
+import { LessonQuiz } from "@/components/lesson-quiz";
 import Link from "next/link";
 
 function ChordCard({ chordKey, root = "C" }: { chordKey: string; root?: string }) {
@@ -111,6 +112,9 @@ export default function ChordTypesPage() {
           <li>sus系は3度がなく、解決を求める浮遊感がある</li>
         </ul>
       </section>
+
+      {/* Quiz */}
+      <LessonQuiz lessonId="chord-types" />
 
       {/* Navigation */}
       <div className="flex justify-between pt-4" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>

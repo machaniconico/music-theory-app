@@ -4,6 +4,7 @@ import { useState } from "react";
 import { NOTE_NAMES, CHORD_TYPES, getChordNotes, getChordMidiNotes, INTERVAL_NAMES } from "@/lib/music-theory";
 import { playChord, playArpeggio } from "@/lib/audio-engine";
 import { PianoKeyboard } from "./piano-keyboard";
+import { StaffNotation } from "./staff-notation";
 
 interface ChordDisplayProps {
   initialRoot?: string;
@@ -121,6 +122,14 @@ export function ChordDisplay({ initialRoot = "C", initialType = "major" }: Chord
             </span>
           </div>
         ))}
+      </div>
+
+      {/* Staff Notation */}
+      <div
+        className="rounded-xl px-4 py-3"
+        style={{ background: "var(--color-bg)", border: "1px solid var(--color-border-subtle)" }}
+      >
+        <StaffNotation chords={[midiNotes]} height={140} />
       </div>
 
       {/* Piano Visualization */}

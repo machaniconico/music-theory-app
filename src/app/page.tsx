@@ -58,6 +58,18 @@ const TOOLS = [
     href: "/builder",
     gradient: "linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-green))",
   },
+  {
+    title: "耳コピ練習",
+    description: "音程・コード・進行を聴いて当てる耳トレモード",
+    href: "/ear-training",
+    gradient: "linear-gradient(135deg, var(--color-accent-rose), var(--color-primary))",
+  },
+  {
+    title: "メロディ入力",
+    description: "コード進行の上にピアノでメロディを録音・再生",
+    href: "/melody",
+    gradient: "linear-gradient(135deg, var(--color-secondary), var(--color-accent-blue))",
+  },
 ];
 
 export default function Home() {

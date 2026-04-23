@@ -1,6 +1,7 @@
 "use client";
 
 import { ScaleVisualizer } from "@/components/scale-visualizer";
+import { LessonQuiz } from "@/components/lesson-quiz";
 import Link from "next/link";
 
 export default function ScalesPage() {
@@ -96,6 +97,9 @@ export default function ScalesPage() {
         <h2 style={{ fontFamily: "var(--font-display)" }}>スケールを弾いてみよう</h2>
         <ScaleVisualizer initialRoot="C" initialScale="major" />
       </section>
+
+      {/* Quiz */}
+      <LessonQuiz lessonId="scales" />
 
       {/* Navigation */}
       <div className="flex justify-between pt-4" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>

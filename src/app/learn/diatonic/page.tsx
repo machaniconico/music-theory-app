@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { NOTE_NAMES, DIATONIC_MAJOR, DIATONIC_MAJOR_7TH, CHORD_TYPES, SCALE_TYPES, getDiatonicChordName, getChordMidiNotes } from "@/lib/music-theory";
 import { playChord } from "@/lib/audio-engine";
+import { LessonQuiz } from "@/components/lesson-quiz";
 import Link from "next/link";
 
 export default function DiatonicPage() {
@@ -168,6 +169,9 @@ export default function DiatonicPage() {
           各コードをクリックすると音が鳴ります
         </p>
       </section>
+
+      {/* Quiz */}
+      <LessonQuiz lessonId="diatonic" />
 
       {/* Navigation */}
       <div className="flex justify-between pt-4" style={{ borderTop: "1px solid var(--color-border-subtle)" }}>

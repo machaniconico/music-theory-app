@@ -107,58 +107,120 @@ export const CHORD_TYPES: Record<string, ChordType> = {
 };
 
 // ── Scale Definitions ──
+export type ScaleCategory = "church" | "minor" | "pentatonic" | "special";
+
+export const SCALE_CATEGORY_LABEL: Record<ScaleCategory, string> = {
+  church: "教会旋法",
+  minor: "マイナー系",
+  pentatonic: "ペンタ/ブルース",
+  special: "特殊スケール",
+};
+
 export interface ScaleType {
   name: string;
   nameJa: string;
   intervals: number[];
   description: string;
+  category: ScaleCategory;
 }
 
 export const SCALE_TYPES: Record<string, ScaleType> = {
+  // ── 教会旋法（7モード）──
   major: {
     name: "Major (Ionian)", nameJa: "メジャー（イオニアン）",
     intervals: [0, 2, 4, 5, 7, 9, 11],
     description: "最も基本的なスケール。明るく安定した響き。",
-  },
-  natural_minor: {
-    name: "Natural Minor (Aeolian)", nameJa: "ナチュラルマイナー（エオリアン）",
-    intervals: [0, 2, 3, 5, 7, 8, 10],
-    description: "暗く哀愁のある響き。メジャーの6番目から始めたスケール。",
-  },
-  harmonic_minor: {
-    name: "Harmonic Minor", nameJa: "ハーモニックマイナー",
-    intervals: [0, 2, 3, 5, 7, 8, 11],
-    description: "エキゾチックな響き。ナチュラルマイナーの7度を半音上げたもの。",
-  },
-  melodic_minor: {
-    name: "Melodic Minor", nameJa: "メロディックマイナー",
-    intervals: [0, 2, 3, 5, 7, 9, 11],
-    description: "ジャズで多用。ナチュラルマイナーの6度と7度を半音上げたもの。",
+    category: "church",
   },
   dorian: {
     name: "Dorian", nameJa: "ドリアン",
     intervals: [0, 2, 3, 5, 7, 9, 10],
     description: "マイナーだが明るさがある。ジャズ・ファンクで多用。",
+    category: "church",
+  },
+  phrygian: {
+    name: "Phrygian", nameJa: "フリジアン",
+    intervals: [0, 1, 3, 5, 7, 8, 10],
+    description: "ダーク・スパニッシュな響き。b2が特徴。",
+    category: "church",
+  },
+  lydian: {
+    name: "Lydian", nameJa: "リディアン",
+    intervals: [0, 2, 4, 6, 7, 9, 11],
+    description: "#4が特徴の浮遊感ある明るさ。映画音楽で多用。",
+    category: "church",
   },
   mixolydian: {
     name: "Mixolydian", nameJa: "ミクソリディアン",
     intervals: [0, 2, 4, 5, 7, 9, 10],
     description: "ブルージーな響き。ドミナント7thコードに対応。",
+    category: "church",
   },
+  natural_minor: {
+    name: "Natural Minor (Aeolian)", nameJa: "ナチュラルマイナー（エオリアン）",
+    intervals: [0, 2, 3, 5, 7, 8, 10],
+    description: "暗く哀愁のある響き。メジャーの6番目から始めたスケール。",
+    category: "church",
+  },
+  locrian: {
+    name: "Locrian", nameJa: "ロクリアン",
+    intervals: [0, 1, 3, 5, 6, 8, 10],
+    description: "最も不安定なモード。b2とb5が特徴。",
+    category: "church",
+  },
+
+  // ── マイナー系 ──
+  harmonic_minor: {
+    name: "Harmonic Minor", nameJa: "ハーモニックマイナー",
+    intervals: [0, 2, 3, 5, 7, 8, 11],
+    description: "エキゾチックな響き。ナチュラルマイナーの7度を半音上げたもの。",
+    category: "minor",
+  },
+  melodic_minor: {
+    name: "Melodic Minor", nameJa: "メロディックマイナー",
+    intervals: [0, 2, 3, 5, 7, 9, 11],
+    description: "ジャズで多用。ナチュラルマイナーの6度と7度を半音上げたもの。",
+    category: "minor",
+  },
+
+  // ── ペンタトニック / ブルース ──
   pentatonic_major: {
     name: "Major Pentatonic", nameJa: "メジャーペンタトニック",
     intervals: [0, 2, 4, 7, 9],
     description: "5音スケール。シンプルで使いやすい。ポップス・ロックの定番。",
+    category: "pentatonic",
   },
   pentatonic_minor: {
     name: "Minor Pentatonic", nameJa: "マイナーペンタトニック",
     intervals: [0, 3, 5, 7, 10],
     description: "ブルース・ロックの基本。ギターソロの定番スケール。",
+    category: "pentatonic",
   },
   blues: {
     name: "Blues", nameJa: "ブルース",
     intervals: [0, 3, 5, 6, 7, 10],
     description: "マイナーペンタに#4/b5を追加。ブルーノートが特徴。",
+    category: "pentatonic",
+  },
+
+  // ── 特殊スケール ──
+  whole_tone: {
+    name: "Whole Tone", nameJa: "ホールトーン",
+    intervals: [0, 2, 4, 6, 8, 10],
+    description: "全音だけで構成。浮遊感・夢のような響き。印象派で多用。",
+    category: "special",
+  },
+  diminished_whole_half: {
+    name: "Diminished (W-H)", nameJa: "ディミニッシュ（全半）",
+    intervals: [0, 2, 3, 5, 6, 8, 9, 11],
+    description: "全音→半音の繰り返し。ディミニッシュコード上で使う。",
+    category: "special",
+  },
+  diminished_half_whole: {
+    name: "Diminished (H-W)", nameJa: "ディミニッシュ（半全）",
+    intervals: [0, 1, 3, 4, 6, 7, 9, 10],
+    description: "半音→全音の繰り返し。ドミナント7(b9)コード上で使う。",
+    category: "special",
   },
 };
 

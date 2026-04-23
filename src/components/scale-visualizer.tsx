@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { NOTE_NAMES, SCALE_TYPES, getScaleNotes, getScaleMidiNotes } from "@/lib/music-theory";
+import {
+  NOTE_NAMES,
+  SCALE_CATEGORY_LABEL,
+  SCALE_TYPES,
+  ScaleCategory,
+  getScaleMidiNotes,
+  getScaleNotes,
+} from "@/lib/music-theory";
 import { playNote } from "@/lib/audio-engine";
 import { PianoKeyboard } from "./piano-keyboard";
 
@@ -58,25 +65,43 @@ export function ScaleVisualizer({ initialRoot = "C", initialScale = "major" }: S
           </div>
         </div>
 
-        <div className="space-y-1.5 flex-1 min-w-[200px]">
+        <div className="space-y-2 flex-1 min-w-[200px]">
           <label className="block text-xs font-medium uppercase tracking-wider" style={{ color: "var(--color-text-tertiary)" }}>
             スケール
           </label>
-          <div className="flex flex-wrap gap-1">
-            {Object.entries(SCALE_TYPES).map(([key, s]) => (
-              <button
-                key={key}
-                onClick={() => setScaleType(key)}
-                className="px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150"
-                style={{
-                  background: scaleType === key ? "var(--color-accent-blue)" : "var(--color-bg)",
-                  color: scaleType === key ? "oklch(0.95 0.01 240)" : "var(--color-text-secondary)",
-                  border: `1px solid ${scaleType === key ? "var(--color-accent-blue)" : "var(--color-border)"}`,
-                }}
-              >
-                {s.nameJa.split("（")[0]}
-              </button>
-            ))}
+          <div className="space-y-2">
+            {(Object.keys(SCALE_CATEGORY_LABEL) as ScaleCategory[]).map((category) => {
+              const entries = Object.entries(SCALE_TYPES).filter(
+                ([, s]) => s.category === category,
+              );
+              if (entries.length === 0) return null;
+              return (
+                <div key={category} className="space-y-1">
+                  <div
+                    className="text-[10px] font-semibold uppercase tracking-wider"
+                    style={{ color: "var(--color-text-tertiary)" }}
+                  >
+                    {SCALE_CATEGORY_LABEL[category]}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {entries.map(([key, s]) => (
+                      <button
+                        key={key}
+                        onClick={() => setScaleType(key)}
+                        className="px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150"
+                        style={{
+                          background: scaleType === key ? "var(--color-accent-blue)" : "var(--color-bg)",
+                          color: scaleType === key ? "oklch(0.95 0.01 240)" : "var(--color-text-secondary)",
+                          border: `1px solid ${scaleType === key ? "var(--color-accent-blue)" : "var(--color-border)"}`,
+                        }}
+                      >
+                        {s.nameJa.split("（")[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

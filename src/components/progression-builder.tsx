@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   NOTE_NAMES, CHORD_TYPES, DIATONIC_MAJOR, DIATONIC_MAJOR_7TH,
-  SCALE_TYPES, PRESET_PROGRESSIONS, getDiatonicChordName, getChordMidiNotes,
+  SCALE_TYPES, PRESET_PROGRESSIONS, getDiatonicChordName,
 } from "@/lib/music-theory";
-import { playChord, playProgression, stopAll } from "@/lib/audio-engine";
+import { playArrangement, playChord, stopAll } from "@/lib/audio-engine";
+import {
+  SavedProgression,
+  deleteProgression,
+  getProgressions,
+  saveProgression,
+} from "@/lib/storage";
+import { RHYTHM_LABELS, RhythmPattern } from "@/lib/rhythm";
+import { generateRandomProgression } from "@/lib/progression-generator";
+import { StaffNotation } from "./staff-notation";
 
 interface BuilderChord {
   degreeIndex: number;
@@ -24,9 +33,55 @@ export function ProgressionBuilder() {
   ]);
   const [playingIndex, setPlayingIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [savedList, setSavedList] = useState<SavedProgression[]>([]);
+  const [saveName, setSaveName] = useState("");
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [rhythm, setRhythm] = useState<RhythmPattern>("off");
 
   const diatonic = useSeventh ? DIATONIC_MAJOR_7TH : DIATONIC_MAJOR;
   const majorScale = SCALE_TYPES.major;
+
+  useEffect(() => {
+    setSavedList(getProgressions());
+  }, []);
+
+  const refreshSaved = useCallback(() => {
+    setSavedList(getProgressions());
+  }, []);
+
+  const handleSave = useCallback(() => {
+    const name = saveName.trim() || `無題の進行 ${new Date().toLocaleString("ja-JP")}`;
+    saveProgression({
+      name,
+      key,
+      useSeventh,
+      tempo,
+      chords: progression.map((c) => ({ degreeIndex: c.degreeIndex })),
+    });
+    setSaveName("");
+    setShowSaveInput(false);
+    refreshSaved();
+  }, [saveName, key, useSeventh, tempo, progression, refreshSaved]);
+
+  const handleLoad = useCallback((saved: SavedProgression) => {
+    setKey(saved.key);
+    setUseSeventh(saved.useSeventh);
+    setTempo(saved.tempo);
+    setProgression(
+      saved.chords.map((c) => ({
+        degreeIndex: c.degreeIndex,
+        name: getDiatonicChordName(saved.key, c.degreeIndex, saved.useSeventh),
+      })),
+    );
+  }, []);
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteProgression(id);
+      refreshSaved();
+    },
+    [refreshSaved],
+  );
 
   const updateProgression = useCallback(
     (newKey: string, seventh: boolean) => {
@@ -69,6 +124,12 @@ export function ProgressionBuilder() {
     );
   };
 
+  const handleRandomize = () => {
+    const randomLength = [4, 4, 4, 6, 8][Math.floor(Math.random() * 5)];
+    const degrees = generateRandomProgression(randomLength);
+    loadPreset(degrees);
+  };
+
   const handlePlay = async () => {
     if (isPlaying) {
       await stopAll();
@@ -78,16 +139,12 @@ export function ProgressionBuilder() {
     }
 
     setIsPlaying(true);
-    const rootIdx = NOTE_NAMES.indexOf(key as never);
-    const chordsMidi = progression.map((c) => {
-      const chordRootSemitone = rootIdx + majorScale.intervals[c.degreeIndex];
-      const quality = diatonic[c.degreeIndex].quality;
-      const chordType = CHORD_TYPES[quality];
-      const rootMidi = 48 + (chordRootSemitone % 12);
-      return chordType.intervals.map((i) => rootMidi + i);
+    await playArrangement({
+      chordsMidi,
+      tempo,
+      pattern: rhythm,
+      onChordChange: (idx) => setPlayingIndex(idx),
     });
-
-    await playProgression(chordsMidi, tempo, (idx) => setPlayingIndex(idx));
     setIsPlaying(false);
     setPlayingIndex(-1);
   };
@@ -107,6 +164,15 @@ export function ProgressionBuilder() {
     SD: "var(--color-accent-blue)",
     D: "var(--color-accent-rose)",
   };
+
+  const chordsMidi = progression.map((c) => {
+    const rootIdx = NOTE_NAMES.indexOf(key as never);
+    const chordRootSemitone = rootIdx + majorScale.intervals[c.degreeIndex];
+    const quality = diatonic[c.degreeIndex].quality;
+    const chordType = CHORD_TYPES[quality];
+    const rootMidi = 48 + (chordRootSemitone % 12);
+    return chordType.intervals.map((i) => rootMidi + i);
+  });
 
   return (
     <div className="space-y-8">
@@ -164,6 +230,26 @@ export function ProgressionBuilder() {
               <span className="text-sm font-mono w-8" style={{ color: "var(--color-text-secondary)" }}>
                 {tempo}
               </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>伴奏</label>
+              <select
+                value={rhythm}
+                onChange={(e) => setRhythm(e.target.value as RhythmPattern)}
+                className="px-2 py-1.5 rounded-lg text-sm"
+                style={{
+                  background: "var(--color-bg)",
+                  color: "var(--color-text)",
+                  border: "1px solid var(--color-border)",
+                }}
+              >
+                {(Object.keys(RHYTHM_LABELS) as RhythmPattern[]).map((p) => (
+                  <option key={p} value={p}>
+                    {RHYTHM_LABELS[p]}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -230,13 +316,29 @@ export function ProgressionBuilder() {
           <h3 className="text-lg font-bold m-0" style={{ fontFamily: "var(--font-display)" }}>
             コード進行
           </h3>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleRandomize}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer"
+              style={{ background: "var(--color-bg)", color: "var(--color-secondary)", border: "1px solid var(--color-secondary)" }}
+              title="T→SD→D→T の機能進行でランダム生成"
+            >
+              🎲 ランダム
+            </button>
             <button
               onClick={() => setProgression([])}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer"
               style={{ background: "var(--color-bg)", color: "var(--color-text-tertiary)", border: "1px solid var(--color-border)" }}
             >
               クリア
+            </button>
+            <button
+              onClick={() => setShowSaveInput((v) => !v)}
+              disabled={progression.length === 0}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150 border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "var(--color-bg)", color: "var(--color-accent-green)", border: "1px solid var(--color-accent-green)" }}
+            >
+              💾 保存
             </button>
             <button
               onClick={handlePlay}
@@ -274,6 +376,17 @@ export function ProgressionBuilder() {
             <span className="text-sm">上のコードをダブルクリックして追加、またはプリセットを選択</span>
           </div>
         ) : (
+          <>
+          <div
+            className="rounded-xl px-3 py-2 overflow-x-auto"
+            style={{ background: "var(--color-bg)", border: "1px solid var(--color-border-subtle)" }}
+          >
+            <StaffNotation
+              chords={chordsMidi}
+              width={Math.max(260, progression.length * 130)}
+              height={130}
+            />
+          </div>
           <div className="flex flex-wrap gap-2">
             {progression.map((chord, i) => {
               const d = diatonic[chord.degreeIndex];
@@ -308,8 +421,139 @@ export function ProgressionBuilder() {
               );
             })}
           </div>
+          </>
         )}
       </div>
+
+      {/* Save Input */}
+      {showSaveInput && (
+        <div
+          className="rounded-2xl p-5 space-y-3 animate-fade-in"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-accent-green)",
+          }}
+        >
+          <label
+            className="block text-xs uppercase tracking-wider"
+            style={{ color: "var(--color-text-tertiary)" }}
+          >
+            進行の名前
+          </label>
+          <div className="flex gap-2 flex-wrap">
+            <input
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              placeholder="例: 丸サ風Aメロ"
+              className="flex-1 min-w-[200px] px-3 py-2 rounded-lg text-sm"
+              style={{
+                background: "var(--color-bg)",
+                color: "var(--color-text)",
+                border: "1px solid var(--color-border)",
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSave();
+              }}
+              autoFocus
+            />
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer border-0"
+              style={{
+                background: "var(--color-accent-green)",
+                color: "oklch(0.15 0.02 155)",
+              }}
+            >
+              保存する
+            </button>
+            <button
+              onClick={() => {
+                setShowSaveInput(false);
+                setSaveName("");
+              }}
+              className="px-4 py-2 rounded-lg text-sm cursor-pointer border-0"
+              style={{
+                background: "var(--color-bg)",
+                color: "var(--color-text-secondary)",
+                border: "1px solid var(--color-border)",
+              }}
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Saved Progressions */}
+      {savedList.length > 0 && (
+        <div
+          className="rounded-2xl p-6 space-y-4"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border-subtle)",
+          }}
+        >
+          <h3 className="text-lg font-bold m-0" style={{ fontFamily: "var(--font-display)" }}>
+            保存した進行
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {savedList.map((saved) => (
+              <div
+                key={saved.id}
+                className="rounded-xl p-4 space-y-2"
+                style={{
+                  background: "var(--color-bg)",
+                  border: "1px solid var(--color-border)",
+                }}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span
+                    className="text-sm font-bold flex-1 min-w-0 break-words"
+                    style={{ color: "var(--color-text)", fontFamily: "var(--font-display)" }}
+                  >
+                    {saved.name}
+                  </span>
+                  <button
+                    onClick={() => handleDelete(saved.id)}
+                    className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs cursor-pointer border-0"
+                    style={{
+                      background: "transparent",
+                      color: "var(--color-accent-rose)",
+                      border: "1px solid var(--color-accent-rose)",
+                    }}
+                    aria-label="削除"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="text-xs" style={{ color: "var(--color-text-tertiary)" }}>
+                  {saved.key}
+                  {saved.useSeventh ? " / 7th" : ""} · {saved.tempo} BPM · {saved.chords.length}
+                  コード
+                </div>
+                <div className="text-xs font-mono" style={{ color: "var(--color-text-secondary)" }}>
+                  {saved.chords
+                    .map((c) =>
+                      getDiatonicChordName(saved.key, c.degreeIndex, saved.useSeventh),
+                    )
+                    .join(" → ")}
+                </div>
+                <button
+                  onClick={() => handleLoad(saved)}
+                  className="w-full px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border-0"
+                  style={{
+                    background: "var(--color-primary-muted)",
+                    color: "var(--color-primary)",
+                    border: "1px solid var(--color-primary)",
+                  }}
+                >
+                  読み込む
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Presets */}
       <div
